@@ -2417,6 +2417,7 @@ srtp_unprotect_mki(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len,
     }
 
     /* check replay database */
+    if (!advance_packet_index) {
       status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
       if (status) {
         if (status != srtp_err_status_ok) {
@@ -2425,6 +2426,7 @@ srtp_unprotect_mki(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len,
           }
         }
       }
+    }
   }
 
 #ifdef NO_64BIT_MATH
