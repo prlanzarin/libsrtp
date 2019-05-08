@@ -1727,12 +1727,15 @@ srtp_protect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream,
     delta = srtp_rdbx_estimate_index(&stream->rtp_rdbx, &est, ntohs(hdr->seq));
     status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
     if (status) {
-	if (status != srtp_err_status_replay_fail || !stream->allow_repeat_tx) {
-	    return status;  /* we've been asked to reuse an index */
-	}
+        if (status != srtp_err_status_ok) {
+            if (!stream->allow_repeat_tx) {
+                return status;  /* we've been asked to reuse an index */
+            }
+        }
     } else {
-	srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
+        srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
     }
+	 
 
 #ifdef NO_64BIT_MATH
     debug_print2(mod_srtp, "estimated packet index: %08x%08x",
@@ -2187,8 +2190,11 @@ srtp_protect_mki(srtp_ctx_t *ctx, void *rtp_hdr, int *pkt_octet_len,
   } else {
     status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
     if (status) {
-      if (status != srtp_err_status_replay_fail || !stream->allow_repeat_tx)
-        return status; /* we've been asked to reuse an index */
+      if (status != srtp_err_status_ok) {
+        if (!stream->allow_repeat_tx) {
+          return status;  /* we've been asked to reuse an index */
+        }
+      }
     }
     srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
   }
@@ -2411,11 +2417,14 @@ srtp_unprotect_mki(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len,
     }
 
     /* check replay database */
-    if (!advance_packet_index) {
       status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
-      if (status)
-        return status;
-    }
+      if (status) {
+        if (status != srtp_err_status_ok) {
+          if (!stream->allow_repeat_tx) {
+            return status;  /* we've been asked to reuse an index */
+          }
+        }
+      }
   }
 
 #ifdef NO_64BIT_MATH
